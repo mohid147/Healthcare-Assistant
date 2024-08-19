@@ -1,71 +1,80 @@
-/* Reset some default styles */
 body, h1, button {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* Basic styling for the body */
 body {
     font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 20px;
     background-color: #f0f0f0;
     color: #333;
     text-align: center;
 }
 
-/* Header styling */
+header {
+    background-color: #007bff;
+    color: #fff;
+    padding: 20px;
+    border-bottom: 2px solid #0056b3;
+}
+
 h1 {
-    color: #333;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
-/* Container for buttons */
-.button-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 15px;
-    margin-bottom: 20px;
+.language-selector {
+    margin-top: 10px;
 }
 
-/* Styling for buttons */
-.button {
-    padding: 15px 30px;
+.language-selector button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #0056b3;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.language-selector button:hover {
+    background-color: #004494;
+}
+
+.controls, .features {
+    margin: 20px 0;
+}
+
+.btn {
+    padding: 15px 25px;
     font-size: 16px;
     cursor: pointer;
     border: none;
-    border-radius: 8px;
+    border-radius: 5px;
     color: #fff;
     transition: background-color 0.3s, transform 0.2s;
 }
 
-.button:hover {
-    background-color: #555;
+.btn:hover {
     transform: scale(1.05);
 }
+#start { background-color: #28a745; }
+#stop { background-color: #dc3545; }
+#healthTips { background-color: #17a2b8; }
+#symptomChecker { background-color: #ffc107; }
+#bookAppointment { background-color: #007bff; }
+#contactSupport { background-color: #6c757d; }
+#aboutUs { background-color: #e83e8c; }
 
-#start { background-color: #4CAF50; }
-#stop { background-color: #f44336; }
-#healthTips { background-color: #2196F3; }
-#bookAppointment { background-color: #FFC107; }
-#symptomChecker { background-color: #009688; }
-#contactSupport { background-color: #3F51B5; }
-#aboutUs { background-color: #E91E63; }
-
-/* Output styling */
 #output {
     font-size: 18px;
     font-weight: bold;
     margin-top: 20px;
     padding: 10px;
     border: 1px solid #ddd;
-    border-radius: 8px;
+    border-radius: 5px;
     background-color: #fff;
 }
 
-/* Listening indicator styling */
 #listeningIndicator {
     font-size: 24px;
     font-weight: bold;
@@ -73,14 +82,17 @@ h1 {
     color: #333;
 }
 
-/* Responsive design adjustments */
+footer {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #007bff;
+    color: #fff;
+    border-top: 2px solid #0056b3;
+}
+
 @media (max-width: 600px) {
-    .button-container {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .button {
+    .language-selector button, .btn {
         width: 90%;
+        margin-bottom: 10px;
     }
 }

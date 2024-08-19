@@ -1,164 +1,217 @@
-const startButton = document.getElementById('start');
-const stopButton = document.getElementById('stop');
-const output = document.getElementById('output');
-const listeningIndicator = document.getElementById('listeningIndicator');
-const healthTipsButton = document.getElementById('healthTips');
-const bookAppointmentButton = document.getElementById('bookAppointment');
-const symptomCheckerButton = document.getElementById('symptomChecker');
-const contactSupportButton = document.getElementById('contactSupport');
-const aboutUsButton = document.getElementById('aboutUs');
+document.addEventListener('DOMContentLoaded', () => {
+    // Elements
+    const elements = {
+        startButton: document.getElementById('start'),
+        stopButton: document.getElementById('stop'),
+        output: document.getElementById('output'),
+        listeningIndicator: document.getElementById('listeningIndicator'),
+        healthTipsButton: document.getElementById('healthTips'),
+        bookAppointmentButton: document.getElementById('bookAppointment'),
+        symptomCheckerButton: document.getElementById('symptomChecker'),
+        contactSupportButton: document.getElementById('contactSupport'),
+        aboutUsButton: document.getElementById('aboutUs'),
+        languageButtons: {
+            'en-US': document.getElementById('englishButton'),
+            'hi-IN': document.getElementById('hindiButton'),
+            'te-IN': document.getElementById('teluguButton')
+        }
+    };
 
-// Variables
-let recognition = null;
-let isListening = false;
-let expectingFollowUp = false;
+    // Variables
+    let recognition;
+    let isListening = false;
+    let expectingFollowUp = false;
+    let currentLanguage = 'en-US'; // Default language
 
-if ('webkitSpeechRecognition' in window) {
-    recognition = new webkitSpeechRecognition();
-    recognition.continuous = false; 
-    recognition.interimResults = false; 
-    recognition.lang = 'en-US';
+    // Initialize Speech Recognition
+    function initSpeechRecognition() {
+        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false; // Set to true for continuous listening
+            recognition.interimResults = false; // Set to true for interim results
+            recognition.lang = currentLanguage;
 
-    recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript.trim();
-        output.textContent = transcript;
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript.trim();
+                elements.output.textContent = transcript;
+                if (expectingFollowUp) {
+                    handleFollowUpResponse(transcript.toLowerCase());
+                } else {
+                    respond(transcript.toLowerCase());
+                }
+            };
 
-        if (expectingFollowUp) {
-            handleFollowUpResponse(transcript.toLowerCase());
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                elements.output.textContent = `Error: ${event.error}`;
+                elements.listeningIndicator.textContent = '🔴 Error';
+            };
+
+            recognition.onend = () => {
+                if (isListening) {
+                    recognition.start();
+                }
+                updateListeningStatus(false);
+            };
         } else {
-            respond(transcript.toLowerCase());
+            elements.output.textContent = 'Speech recognition not supported in this browser.';
         }
-    };
+    }
 
-    recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        output.textContent = `Error: ${event.error}`;
-        listeningIndicator.textContent = '🔴 Error';
-    };
+    // Update Listening Status
+    function updateListeningStatus(listening) {
+        isListening = listening;
+        elements.listeningIndicator.textContent = listening ? '🟢 Listening' : '🔴 Not Listening';
+        if (!listening) elements.output.textContent = 'Stopped listening.';
+    }
 
-    recognition.onend = () => {
-        if (isListening) {
-            recognition.start(); // Restart if needed
+    // Event Listeners for Language Selection
+    Object.keys(elements.languageButtons).forEach((lang) => {
+        elements.languageButtons[lang].addEventListener('click', () => {
+            currentLanguage = lang;
+            updateLanguageSettings();
+        });
+    });
+
+    function updateLanguageSettings() {
+        if (recognition) {
+            recognition.lang = currentLanguage;
         }
-        listeningIndicator.textContent = '🔴 Not Listening';
-    };
-} else {
-    output.textContent = 'Speech recognition not supported in this browser.';
-}
-
-// Event Listeners
-startButton.addEventListener('click', () => {
-    if (!isListening) {
-        recognition.start();
-        isListening = true;
-        output.textContent = 'Listening...';
-        listeningIndicator.textContent = '🟢 Listening';
         greetUser();
     }
-});
 
-stopButton.addEventListener('click', () => {
-    if (isListening) {
-        recognition.stop();
-        isListening = false;
-        output.textContent = 'Stopped listening.';
-        listeningIndicator.textContent = '🔴 Not Listening';
-    }
-});
+    // Initialize Speech Recognition
+    initSpeechRecognition();
 
-healthTipsButton.addEventListener('click', () => {
-    speak("Here are some general health tips: 1) Drink plenty of water. 2) Get regular exercise. 3) Eat a balanced diet.");
-});
+    // Event Listeners for Start/Stop buttons
+    elements.startButton.addEventListener('click', () => {
+        if (!isListening) {
+            recognition.start();
+            updateListeningStatus(true);
+            greetUser();
+        }
+    });
 
-bookAppointmentButton.addEventListener('click', () => {
-    speak("I can help you book an appointment. Please provide the details.");
-});
+    elements.stopButton.addEventListener('click', () => {
+        if (isListening) {
+            recognition.stop();
+            updateListeningStatus(false);
+        }
+    });
 
-symptomCheckerButton.addEventListener('click', () => {
-    speak("Describe your symptoms, and I can provide some advice.");
-    expectingFollowUp = true;
-});
+    // Example Health Tips Button
+    elements.healthTipsButton.addEventListener('click', () => {
+        const tips = {
+            'en-US': "Remember to stay hydrated, get regular exercise, and eat a balanced diet.",
+            'hi-IN': "भरपूर पानी पिएं, नियमित व्यायाम करें, और संतुलित आहार लें।",
+            'te-IN': "పుష్కలంగా నీరు తాగండి, క్రమం తప్పని వ్యాయామం చేయండి, మరియు సమతుల్య ఆహారం తీసుకోండి."
+        };
+        speak(tips[currentLanguage]);
+    });
 
-contactSupportButton.addEventListener('click', () => {
-    speak("You can reach out to our support team via email at support@healthcareassistant.com.");
-});
+    // Event Listeners for other actions
+    elements.bookAppointmentButton.addEventListener('click', () => {
+        speak({
+            'en-US': "Booking an appointment with your preferred doctor. Please hold on...",
+            'hi-IN': "आपके पसंदीदा डॉक्टर के साथ अपॉइंटमेंट बुक किया जा रहा है। कृपया प्रतीक्षा करें...",
+            'te-IN': "మీకు ఇష్టమైన డాక్టర్‌తో అపాయింట్మెంట్ బుక్ చేస్తోంది. దయచేసి వేచి ఉండండి..."
+        }[currentLanguage]);
+    });
 
-aboutUsButton.addEventListener('click', () => {
-    speak("We are dedicated to providing reliable health information and assistance.");
-});
+    elements.contactSupportButton.addEventListener('click', () => {
+        speak({
+            'en-US': "Connecting you to customer support. Please wait...",
+            'hi-IN': "आपको ग्राहक सहायता से जोड़ा जा रहा है। कृपया प्रतीक्षा करें...",
+            'te-IN': "మీకు కస్టమర్ సపోర్ట్‌ను కనెక్ట్ చేస్తోంది. దయచేసి వేచి ఉండండి..."
+        }[currentLanguage]);
+    });
 
-// Functions
-function greetUser() {
-    const greeting = "Hi, I am your healthcare assistant. How can I help you today?";
-    speak(greeting);
-    const emotionalGreeting = Math.random() > 0.5 ? "I hope you're having a great day!" : "I’m here to help, no matter how you’re feeling.";
-    output.textContent += ` ${emotionalGreeting}`;
-}
+    elements.aboutUsButton.addEventListener('click', () => {
+        speak({
+            'en-US': "We are committed to providing you with the best healthcare assistance. How can we help you today?",
+            'hi-IN': "हम आपको सर्वश्रेष्ठ स्वास्थ्य देखभाल सहायता प्रदान करने के लिए प्रतिबद्ध हैं। आज हम आपकी कैसे मदद कर सकते हैं?",
+            'te-IN': "మేము మీకు ఉత్తమ ఆరోగ్య సహాయాన్ని అందించడానికి కట్టుబడి ఉన్నాము. ఈ రోజు మిమ్మల్ని ఎలా సాయపడగలను?"
+        }[currentLanguage]);
+    });
 
-function respond(message) {
-    let response = "I didn't quite catch that. Could you please repeat?";
-
-    if (message.includes('fever')) {
-        response = "For a fever, it's important to stay hydrated and rest. You can take over-the-counter medication like acetaminophen or ibuprofen. If the fever persists for more than a few days or is very high, please consult a doctor.";
-    } else if (message.includes('headache')) {
-        response = "For a headache, ensure you're drinking enough water and resting. Over-the-counter pain relievers like ibuprofen or acetaminophen can help. If headaches are frequent or severe, please see a healthcare provider.";
-    } else if (message.includes('cold')) {
-        response = "For a cold, rest and drink plenty of fluids. You can use over-the-counter medications to relieve symptoms like congestion and cough. If symptoms worsen or last longer than a week, consult a healthcare provider.";
-    } else if (message.includes('injury')) {
-        response = "For injuries, clean the wound, apply antiseptic, and keep it covered. If the injury is severe or you have concerns about infection, seek medical attention.";
-    } else if (message.includes('cough')) {
-        response = "For a cough, drinking warm fluids and using cough drops can help soothe your throat. If the cough persists for more than a few weeks or is accompanied by other symptoms like shortness of breath, consult a healthcare provider.";
-    } else if (message.includes('nausea')) {
-        response = "For nausea, try drinking clear fluids and eating bland foods. If nausea is persistent or accompanied by other symptoms like severe abdominal pain or vomiting, consult a healthcare provider.";
-    } else if (message.includes('dizziness')) {
-        response = "If you’re feeling dizzy, make sure you’re well-hydrated and try to rest. If dizziness is severe, frequent, or accompanied by other symptoms like fainting or a headache, seek medical advice.";
-    } else if (message.includes('stomach pain')) {
-        response = "For stomach pain, try resting and drinking clear fluids. Avoid heavy, greasy foods. If the pain is severe, persistent, or accompanied by other symptoms like vomiting or fever, consult a healthcare provider.";
-    } else if (message.includes('shortness of breath')) {
-        response = "Shortness of breath can be a serious symptom. Try to stay calm and rest. If it’s severe or persistent, seek medical attention immediately.";
-    } else if (message.includes('chest pain')) {
-        response = "Chest pain can be a sign of various conditions. If it’s severe, persistent, or accompanied by other symptoms like shortness of breath or pain radiating to the arm, seek medical attention immediately.";
-    } else if (message.includes('fatigue')) {
-        response = "Fatigue can be caused by many factors. Ensure you’re getting enough rest, eating a balanced diet, and managing stress. If fatigue is persistent or affecting your daily activities, consult a healthcare provider.";
-    } else if (message.includes('appointment')) {
-        response = "I can help with scheduling an appointment. Please provide details like date, time, and reason for the appointment.";
-    } else if (message.includes('help')) {
-        response = "Sure! What kind of help do you need? You can ask about first aid, health tips, or schedule an appointment.";
-    }
-
-    speak(response);
-    setTimeout(() => {
-        const followUp = "Is there anything else I can assist you with?";
-        speak(followUp);
+    // Responding to Symptoms
+    elements.symptomCheckerButton.addEventListener('click', () => {
+        speak("Please describe your symptoms, and I can provide some advice.");
         expectingFollowUp = true;
-    }, 1000);
-}
+    });
 
-function handleFollowUpResponse(transcript) {
-    const lowerCaseTranscript = transcript.toLowerCase();
+    function respond(message) {
+        const responses = {
+            'fever': {
+                'en-US': "It seems you have a fever. Rest, stay hydrated, and take paracetamol if necessary. If the fever persists, consult a doctor.",
+                'hi-IN': "ऐसा लगता है कि आपको बुखार है। आराम करें, हाइड्रेटेड रहें, और पेरासिटामोल लें। यदि बुखार बना रहता है, तो डॉक्टर से परामर्श करें।",
+                'te-IN': "మీకు జ్వరం ఉన్నట్లుగా కనిపిస్తోంది. విశ్రాంతి తీసుకోండి, తగినంత నీటిని త్రాగండి, మరియు అవసరమైతే పారా సిటమాల్ తీసుకోండి. జ్వరం కొనసాగితే, డాక్టర్‌ను సంప్రదించండి."
+            },
+            'headache': {
+                'en-US': "For a headache, rest in a dark room, stay hydrated, and take ibuprofen. If the pain persists, seek medical advice.",
+                'hi-IN': "सिरदर्द के लिए, एक अंधेरे कमरे में आराम करें, हाइड्रेटेड रहें, और इबुप्रोफेन लें। यदि दर्द बना रहता है, तो चिकित्सा सलाह लें।",
+                'te-IN': "తలనొప్పి కోసం, చీకటి గదిలో విశ్రాంతి తీసుకోండి, తగినంత నీటిని త్రాగండి, మరియు ఇబుప్రోఫెన్ తీసుకోండి. నొప్పి కొనసాగితే, వైద్య సలహా పొందండి."
+            }
+        };
 
-    if (lowerCaseTranscript.includes('yes')) {
-        speak("Great! How else can I assist you today?");
-        expectingFollowUp = false;
-    } else if (lowerCaseTranscript.includes('no')) {
-        speak("Alright, have a great day! If you need further assistance, feel free to ask.");
-        expectingFollowUp = false;
-    } else {
-        speak("I didn't quite catch that. Could you please say 'yes' or 'no'?");
+        const match = Object.keys(responses).find(key => message.includes(key));
+        if (match) {
+            speak(responses[match][currentLanguage]);
+        } else {
+            speak({
+                'en-US': "I didn't quite catch that. Could you please repeat?",
+                'hi-IN': "मैंने वह सही से नहीं सुना। क्या आप कृपया दोहरा सकते हैं?",
+                'te-IN': "నేను దాన్ని సరైన విధంగా పట్టుకోలేదు. దయచేసి మళ్లీ చెప్తారా?"
+            }[currentLanguage]);
+        }
     }
-}
 
-function speak(text) {
-    const speech = new SpeechSynthesisUtterance(text);
-    speech.lang = 'en-US';
-    speech.voice = window.speechSynthesis.getVoices().find(voice => voice.name === 'Google UK English Female');
-    speech.onerror = (event) => {
-        console.error('Speech synthesis error:', event.error);
-    };
-    window.speechSynthesis.speak(speech);
-}
+    // Handling Follow-Up Responses
+    function handleFollowUpResponse(message) {
+        // Example responses
+        const followUpResponses = {
+            'yes': {
+                'en-US': "Great! How else can I assist you?",
+                'hi-IN': "अद्भुत! मैं आपकी और कैसे मदद कर सकता हूँ?",
+                'te-IN': "చాలా మంచి! నేను మిమ్మల్ని ఇంకేం సహాయం చేయగలనా?"
+            },
+            'no': {
+                'en-US': "Okay, let me know if you need anything else.",
+                'hi-IN': "ठीक है, यदि आपको किसी और चीज़ की आवश्यकता हो तो बताएं।",
+                'te-IN': "సరే, మీరు మరేదైనా అవసరం ఉంటే నాకు తెలియజేయండి."
+            }
+        };
 
-// Ensure voices are loaded before setting the voice
-window.speechSynthesis.onvoiceschanged = () => {
-    console.log('Voices available:', window.speechSynthesis.getVoices());
-};
+        const response = followUpResponses[message];
+        if (response) {
+            speak(response[currentLanguage]);
+        } else {
+            speak({
+                'en-US': "I'm not sure how to respond to that. Can you please clarify?",
+                'hi-IN': "मुझे इस पर प्रतिक्रिया देने के बारे में यकीन नहीं है। क्या आप कृपया स्पष्ट कर सकते हैं?",
+                'te-IN': "నేను దీనికి ఎలా స్పందించాలో నాకు తెలియదు. దయచేసి స్పష్టత ఇవ్వగలరు?"
+            }[currentLanguage]);
+        }
+
+        expectingFollowUp = false;
+    }
+
+    // Function to speak text
+    function speak(text) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = currentLanguage;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    // Greet User
+    function greetUser() {
+        const greetings = {
+            'en-US': "Hello! How can I assist you today?",
+            'hi-IN': "नमस्ते! मैं आपकी आज कैसे सहायता कर सकता हूँ?",
+            'te-IN': "హలో! నేను ఈ రోజు మీకు ఎలా సహాయం చేయగలను?"
+        };
+        speak(greetings[currentLanguage]);
+    }
+});
+
